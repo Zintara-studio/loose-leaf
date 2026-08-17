@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Page from './Page.jsx';
+import PhotoEdit, { DEFAULT_EDIT } from './PhotoEdit.jsx';
 import { editableSlots, toBlob } from './engine.js';
 
 const LABELS = {
@@ -41,6 +42,8 @@ export default function Editor({ tpl, onBack }) {
   const [values, setValues] = useState({});
   const [page, setPage] = useState(0);
   const [busy, setBusy] = useState('');
+  const [edits, setEdits] = useState({});     // photo_index -> crop / tone
+  const [editing, setEditing] = useState(null);
 
   const slides = tpl.slides;
   const count = tpl.template.photo_count;
@@ -48,14 +51,24 @@ export default function Editor({ tpl, onBack }) {
   const [dragging, setDragging] = useState(null);
 
   // photo_index -> the page it appears on, so a slot can say where it goes
-  const pageOf = useMemo(() => {
-    const map = {};
+  const { pageOf, aspectOf } = useMemo(() => {
+    const pages = {}; const aspects = {};
     slides.forEach((s, i) => {
       (s.frame ? [s.frame] : (s.frames || [])).forEach((f) => {
-        map[f.photo_index] = i + 1;
+        pages[f.photo_index] = i + 1;
+        // the visible window, not the card - same padding the engine uses,
+        // so the crop preview cannot promise a framing the page won't give
+        const style = f.style || 'polaroid';
+        if (style === 'full') {
+          aspects[f.photo_index] = f.photo_w / f.photo_h;
+        } else {
+          const pad = Math.round(f.photo_w * (style === 'bare' ? 0.026 : 0.036));
+          const strip = style === 'bare' ? pad : Math.round(f.photo_h * 0.145);
+          aspects[f.photo_index] = (f.photo_w - pad * 2) / (f.photo_h - pad - strip);
+        }
       });
     });
-    return map;
+    return { pageOf: pages, aspectOf: aspects };
   }, [slides]);
 
   // Object URLs outlive React state, so keep a live handle for cleanup and
@@ -82,26 +95,28 @@ export default function Editor({ tpl, onBack }) {
     const prev = live.current[n];
     if (prev) URL.revokeObjectURL(prev.src);
     setPhotos((p) => ({ ...p, [n]: img }));
+    setEdits((x) => { const next = { ...x }; delete next[n]; return next; });
   }
+
+  const swapKeys = (obj, a, b) => {
+    const next = { ...obj };
+    if (obj[b]) next[a] = obj[b]; else delete next[a];
+    if (obj[a]) next[b] = obj[a]; else delete next[b];
+    return next;
+  };
 
   function swap(a, b) {
     if (!a || !b || a === b) return;
-    setPhotos((p) => {
-      const next = { ...p };
-      if (p[b]) next[a] = p[b]; else delete next[a];
-      if (p[a]) next[b] = p[a]; else delete next[b];
-      return next;
-    });
+    setPhotos((p) => swapKeys(p, a, b));
+    setEdits((x) => swapKeys(x, a, b));   // a crop belongs to its photo
   }
 
   function clear(n) {
     const img = live.current[n];
     if (img) URL.revokeObjectURL(img.src);
-    setPhotos((p) => {
-      const next = { ...p };
-      delete next[n];
-      return next;
-    });
+    setPhotos((p) => { const next = { ...p }; delete next[n]; return next; });
+    setEdits((x) => { const next = { ...x }; delete next[n]; return next; });
+    if (editing === n) setEditing(null);
   }
 
   async function addMany(files) {
@@ -118,7 +133,8 @@ export default function Editor({ tpl, onBack }) {
     for (let k = 0; k < indices.length; k++) {
       const i = indices[k];
       setBusy(`Rendering ${k + 1} / ${indices.length}`);
-      const blob = await toBlob(slides[i], { photos, values, index: i, total: slides.length });
+      const blob = await toBlob(slides[i],
+        { photos, values, edits, index: i, total: slides.length });
       save(blob, `${tpl.template.id}-${String(i + 1).padStart(2, '0')}.jpg`);
       // ponytail: a short gap keeps Chrome from swallowing the later downloads.
       await new Promise((r) => setTimeout(r, 250));
@@ -149,6 +165,18 @@ export default function Editor({ tpl, onBack }) {
       <div className="editor-grid">
 
         <aside className="panel">
+          {editing && photos[editing] ? (
+            <PhotoEdit
+              n={editing}
+              img={photos[editing]}
+              aspect={aspectOf[editing] || 1}
+              page={pageOf[editing] ?? '?'}
+              value={edits[editing] || DEFAULT_EDIT}
+              onChange={(v) => setEdits((x) => ({ ...x, [editing]: v }))}
+              onDone={() => setEditing(null)}
+            />
+          ) : (
+          <>
           <h3>Photos</h3>
           <p className="hint">
             Exactly {count}. Each slot says which page it lands on - drop a file
@@ -196,6 +224,9 @@ export default function Editor({ tpl, onBack }) {
                       aria-label={`Move photo ${n} to slot ${n - 1}`}
                       onClick={() => swap(n, n - 1)}>&larr;</button>
                     <button type="button"
+                      aria-label={`Edit photo ${n}`}
+                      onClick={() => setEditing(n)}>&#9998;</button>
+                    <button type="button"
                       aria-label={`Remove photo ${n}`}
                       onClick={() => clear(n)}>&times;</button>
                     <button type="button" disabled={n === count}
@@ -206,6 +237,8 @@ export default function Editor({ tpl, onBack }) {
               </li>
             ))}
           </ul>
+          </>
+          )}
         </aside>
 
         <section className="stage">
@@ -216,6 +249,7 @@ export default function Editor({ tpl, onBack }) {
             total={slides.length}
             photos={photos}
             values={values}
+            edits={edits}
             scale={0.5}
             aria-label={`Page ${page + 1} preview`}
           />
@@ -230,7 +264,7 @@ export default function Editor({ tpl, onBack }) {
                   aria-label={`Page ${i + 1}`} aria-current={i === page}
                   onClick={() => setPage(i)}>
                   <Page slide={s} index={i} total={slides.length}
-                    photos={photos} values={values} scale={0.09} />
+                    photos={photos} values={values} edits={edits} scale={0.09} />
                 </button>
               ))}
             </div>

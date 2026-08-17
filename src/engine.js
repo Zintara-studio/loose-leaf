@@ -153,14 +153,49 @@ function shapePath(ctx, x, y, w, h, shape) {
   }
 }
 
-function cover(ctx, img, x, y, w, h, shape) {
+// Tone presets. Canvas `filter` does the work, so this is a string each.
+const FILTERS = {
+  none: 'none',
+  warm: 'saturate(1.14) sepia(.16) contrast(1.04)',
+  faded: 'contrast(.88) saturate(.82) brightness(1.07)',
+  film: 'sepia(.3) saturate(1.16) contrast(1.06) brightness(1.02)',
+  cool: 'hue-rotate(-10deg) saturate(1.06) brightness(1.03)',
+  mono: 'grayscale(1) contrast(1.1)',
+};
+const FILTER_NAMES = Object.keys(FILTERS);
+
+// adj: { zoom, ox, oy, rotate, filter }. ox/oy are -1..1 across whatever
+// slack the zoom leaves, so panning can never expose an empty edge.
+function cover(ctx, img, x, y, w, h, shape, adj) {
+  const a = adj || {};
   ctx.save();
   shapePath(ctx, x, y, w, h, shape);
   ctx.clip();
-  const s = Math.max(w / img.width, h / img.height);
-  const dw = img.width * s, dh = img.height * s;
-  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+  if (a.filter && a.filter !== 'none') ctx.filter = FILTERS[a.filter] || 'none';
+
+  const rot = (((a.rotate || 0) % 360) + 360) % 360;
+  const turned = rot === 90 || rot === 270;
+  const iw = turned ? img.height : img.width;
+  const ih = turned ? img.width : img.height;
+
+  const s = Math.max(w / iw, h / ih) * (a.zoom || 1);
+  const slackX = Math.max(0, iw * s - w) / 2;
+  const slackY = Math.max(0, ih * s - h) / 2;
+
+  ctx.translate(x + w / 2 + (a.ox || 0) * slackX, y + h / 2 + (a.oy || 0) * slackY);
+  ctx.rotate(rot * RAD);
+  ctx.drawImage(img, -img.width * s / 2, -img.height * s / 2,
+    img.width * s, img.height * s);
   ctx.restore();
+}
+
+// Fills a canvas with one photo exactly as a frame of that aspect would
+// crop it, so the edit preview cannot disagree with the page.
+function previewPhoto(canvas, img, adj) {
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (img) cover(ctx, img, 0, 0, canvas.width, canvas.height, 'rect', adj);
 }
 
 function placeholder(ctx, x, y, w, h, n, shape) {
@@ -219,13 +254,13 @@ function mount(ctx, f, w, h, rect) {
   }
 }
 
-function frame(ctx, f, img, values) {
+function frame(ctx, f, img, values, adj) {
   const style = f.style || 'polaroid';
   const shape = f.shape || 'rect';
 
   // full: the photo is the page. Caption sits on a band along the bottom.
   if (style === 'full') {
-    if (img) cover(ctx, img, 0, 0, W, H, 'rect');
+    if (img) cover(ctx, img, 0, 0, W, H, 'rect', adj);
     else placeholder(ctx, 0, 0, W, H, f.photo_index, 'rect');
     const band = ctx.createLinearGradient(0, H - 420, 0, H);
     band.addColorStop(0, 'rgba(24,20,16,0)');
@@ -255,7 +290,7 @@ function frame(ctx, f, img, values) {
   ctx.restore();
 
   const rect = [-w / 2 + pad, -h / 2 + pad, w - pad * 2, h - pad - strip];
-  if (img) cover(ctx, img, rect[0], rect[1], rect[2], rect[3], shape);
+  if (img) cover(ctx, img, rect[0], rect[1], rect[2], rect[3], shape, adj);
   else placeholder(ctx, rect[0], rect[1], rect[2], rect[3], f.photo_index, shape);
 
   if (shape === 'rect') mount(ctx, f, w, h, rect);
@@ -264,7 +299,7 @@ function frame(ctx, f, img, values) {
   ctx.restore();
 }
 
-function keepsake(ctx, k, img, values) {
+function keepsake(ctx, k, img, values, adj) {
   const s = k.size, lip = 40, pad = 16;
   ctx.save();
   ctx.translate(k.center[0], k.center[1]);
@@ -277,7 +312,7 @@ function keepsake(ctx, k, img, values) {
   ctx.fillRect(-s / 2 - pad, -s / 2 - pad, s + pad * 2, s + pad * 2 + lip);
   ctx.restore();
 
-  if (img) cover(ctx, img, -s / 2, -s / 2, s, s, k.shape);
+  if (img) cover(ctx, img, -s / 2, -s / 2, s, s, k.shape, adj);
   else placeholder(ctx, -s / 2, -s / 2, s, s, k.user_photo || '?', k.shape);
 
   text(ctx, k.caption, 0, s / 2 + pad + lip / 2 + 34, values);
@@ -655,6 +690,7 @@ function renderSlide(ctx, slide, opts) {
   opts = opts || {};
   const photos = opts.photos || {};
   const values = opts.values;
+  const edits = opts.edits || {};
   const index = opts.index || 0;
   const total = opts.total || 1;
   const rnd = seeded(index + 1);
@@ -663,9 +699,16 @@ function renderSlide(ctx, slide, opts) {
   ctx.save();
   paper(ctx, slide.paper, rnd);
   (slide.texts || []).forEach((t) => text(ctx, t, t.center[0], t.center[1], values));
-  if (slide.frame) frame(ctx, slide.frame, photos[slide.frame.photo_index], values);
-  (slide.frames || []).forEach((f) => frame(ctx, f, photos[f.photo_index], values));
-  if (slide.keepsake) keepsake(ctx, slide.keepsake, photos[slide.keepsake.user_photo], values);
+  if (slide.frame) {
+    frame(ctx, slide.frame, photos[slide.frame.photo_index], values,
+      edits[slide.frame.photo_index]);
+  }
+  (slide.frames || []).forEach((f) =>
+    frame(ctx, f, photos[f.photo_index], values, edits[f.photo_index]));
+  if (slide.keepsake) {
+    keepsake(ctx, slide.keepsake, photos[slide.keepsake.user_photo], values,
+      edits[slide.keepsake.user_photo]);
+  }
   (slide.ephemera || []).forEach((e) => ephemera(ctx, e, values));
   (slide.stickers || []).forEach((k) => sticker(ctx, k));
   (slide.accents || []).forEach((a) => accent(ctx, a));
@@ -713,4 +756,7 @@ function fontsReady() {
   ]).catch(() => {});
 }
 
-export { W, H, renderSlide, paint, toBlob, editableSlots, fontsReady, TAPE };
+export {
+  W, H, renderSlide, paint, toBlob, editableSlots, fontsReady, TAPE,
+  previewPhoto, FILTER_NAMES,
+};

@@ -52,6 +52,16 @@ onto a specific slot, dragged between slots to move it, nudged with the
 arrow controls, or removed. The bulk "Add photos" button just fills whatever
 gaps are left, in order.
 
+## Editing photos
+
+The edit control on a filled slot opens crop, zoom, 90-degree rotation and
+six tone presets (warm, faded, film, cool, mono). Zoom past 1x and the
+preview can be dragged to reframe; panning is clamped to the slack the zoom
+leaves, so an empty edge can never be exposed. The preview uses the engine's
+own crop maths at the frame's real aspect, padding included, so it cannot
+promise a framing the page will not give. Edits travel with the photo when
+slots are swapped and are applied to the downloaded JPEGs.
+
 ## Artwork
 
 `src/art/` holds public-domain botanical plates (Redoute, Thome) and
