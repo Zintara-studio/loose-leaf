@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { TEMPLATES } from './templates.js';
+import { FORMATS, REF } from './format.js';
 import Page from './Page.jsx';
 
 const TAPES = ['', 'sage', 'butter', 'sky', 'lilac'];
@@ -14,6 +15,7 @@ const colourOf = (c) => {
 export default function Gallery({ onPick }) {
   const hero = TEMPLATES[0];
   const [filter, setFilter] = useState(null);
+  const [format, setFormat] = useState(null);
 
   // Fifty three cards is a wall without a way to narrow it.
   const categories = useMemo(() => {
@@ -24,9 +26,18 @@ export default function Gallery({ onPick }) {
     return [...counts].sort((a, b) => b[1] - a[1]);
   }, []);
 
-  const shown = filter
-    ? TEMPLATES.filter((t) => t.template.category.includes(filter))
-    : TEMPLATES;
+  const formats = useMemo(() => {
+    const counts = new Map();
+    TEMPLATES.forEach((t) => {
+      const f = t.template.format || REF;
+      counts.set(f, (counts.get(f) || 0) + 1);
+    });
+    return [...counts];
+  }, []);
+
+  const shown = TEMPLATES.filter((t) =>
+    (!filter || t.template.category.includes(filter))
+    && (!format || (t.template.format || REF) === format));
 
   return (
     <main className="view">
@@ -45,9 +56,10 @@ export default function Gallery({ onPick }) {
             </span>
           </h1>
           <p className="lede">
-            Templates drawn once, by hand, then rendered at 1080 &times; 1350 - the size
-            Instagram asks for. Drop in photos, change the words that need changing,
-            download the set. Your photos stay in this tab.
+            Templates drawn once, by hand, then rendered at the size the post
+            actually needs - 4:5 carousels, 9:16 stories, 1:1 squares. Drop in photos,
+            change the words that need changing, download the set. Your photos stay
+            in this tab.
           </p>
           <div className="hero-actions">
             <a className="btn btn-primary" href="#board">See the templates</a>
@@ -77,6 +89,28 @@ export default function Gallery({ onPick }) {
             slip, a luggage tag - and stays quiet everywhere else.
           </p>
 
+          <div className="filters" role="group" aria-label="Filter by output size">
+            <button
+              type="button"
+              className={`chip chip-btn${format ? '' : ' on'}`}
+              aria-pressed={!format}
+              onClick={() => setFormat(null)}
+            >
+              every size
+            </button>
+            {formats.map(([f, n]) => (
+              <button
+                key={f}
+                type="button"
+                className={`chip chip-btn${format === f ? ' on' : ''}`}
+                aria-pressed={format === f}
+                onClick={() => setFormat(format === f ? null : f)}
+              >
+                {FORMATS[f].label} {n}
+              </button>
+            ))}
+          </div>
+
           <div className="filters" role="group" aria-label="Filter by category">
             <button
               type="button"
@@ -84,7 +118,7 @@ export default function Gallery({ onPick }) {
               aria-pressed={!filter}
               onClick={() => setFilter(null)}
             >
-              all {TEMPLATES.length}
+              all {shown.length === TEMPLATES.length ? TEMPLATES.length : `${shown.length} of ${TEMPLATES.length}`}
             </button>
             {categories.map(([c, n], i) => (
               <button
@@ -114,6 +148,7 @@ export default function Gallery({ onPick }) {
               <p className="tagline">{t.template.tagline}</p>
               <p className="meta">
                 {t.template.photo_count} photos, {t.slides.length} pages
+                <span className="fmt">{FORMATS[t.template.format || REF].label}</span>
               </p>
               <span className="card-foot">
                 {t.template.category.map((c) => (

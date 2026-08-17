@@ -91,9 +91,23 @@ Never reference AI, prompts, users, or these instructions in any template text.
 
 ## 4. ENGINE CAPABILITIES AND COORDINATES
 
-Canvas: 1080 wide x 1350 tall. Origin top-left. All positions are element
-CENTERS in pixels. Safe area: keep every element center within x 70-1010 and
-y 60-1290; the band below y 1290 is reserved for the page number.
+Formats. A template declares one, and every slide uses it:
+- `post` (default) - 1080 x 1350, the 4:5 carousel page. Content band
+  y 60-1290; the strip below y 1290 is the page number.
+- `story` - 1080 x 1920, for stories and reel covers. Content band
+  y 268-1652: Instagram covers roughly the top and bottom 260px with its own
+  UI, so anything outside that band will be sat on. No page number is drawn.
+- `square` - 1080 x 1080. Content band y 52-1028.
+
+Every format is 1080 wide, so only vertical measures change between them.
+The coordinates below are written for `post`; for another format, scale
+y positions and frame heights by that format's band height over 1230.
+
+Stories are watched, not read: 3-5 photos, short lines, and lean on `full`
+pages. A six-page story is a carousel that got lost.
+
+Origin top-left. All positions are element CENTERS in pixels. Keep every
+element center inside the format's content band and within x 70-1010.
 
 Paper (one per page):
 - `{ "style": "ruled" | "kraft" | "plain" | "grid" | "dot", "stains": 0-2 }`

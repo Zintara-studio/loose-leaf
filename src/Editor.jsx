@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Page from './Page.jsx';
 import PhotoEdit, { DEFAULT_EDIT } from './PhotoEdit.jsx';
 import { editableSlots, toBlob } from './engine.js';
+import { FORMATS, REF } from './format.js';
 
 const LABELS = {
   'the': 'opening word', 'title-1': 'title, line 1', 'title-2': 'title, line 2',
@@ -150,7 +151,8 @@ export default function Editor({ tpl, onBack }) {
         <div className="grow">
           <h2>{tpl.template.name}</h2>
           <p className="sub">
-            {tpl.template.tone} / {count} photos / {slides.length} pages
+            {tpl.template.tone} / {count} photos / {slides.length} pages /{' '}
+            {FORMATS[tpl.template.format || REF].size.join(' x ')}
           </p>
         </div>
         <button

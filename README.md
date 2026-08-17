@@ -1,8 +1,22 @@
 # Loose Leaf
 
-Scrapbook carousel maker, React + Vite. Pick one of 53 templates, drop in
-photos, edit the words, download 1080x1350 JPEGs. Nothing uploads anywhere -
-photos go straight into a canvas in the tab and come back out as files.
+Scrapbook post maker, React + Vite. Pick one of 71 templates, drop in photos,
+edit the words, download the JPEGs. Nothing uploads anywhere - photos go
+straight into a canvas in the tab and come back out as files.
+
+Three output sizes, filterable in the gallery:
+
+| format | size | count |
+|---|---|---|
+| carousel | 1080 x 1350 (4:5) | 53 |
+| story | 1080 x 1920 (9:16) | 14 |
+| square | 1080 x 1080 (1:1) | 4 |
+
+Templates are authored once in carousel space; `src/format.js` defines each
+format's content band and `build.js` remaps vertical measures into it. The
+story band is deliberately only a little taller than the carousel band,
+because Instagram covers the top and bottom ~260px of a story with its own
+UI.
 
 ```
 npm install
@@ -18,6 +32,7 @@ npm run build
 | `src/deck.js` | 50 templates as compact descriptors |
 | `src/build.js` | expands a descriptor into section-6 JSON |
 | `src/templates.js` | 3 hand-written raw templates + the built 50, in one array |
+| `src/format.js` | page sizes and the content band inside each |
 | `src/art/` | public-domain sticker artwork, see `art/CREDITS.txt` |
 | `src/Page.jsx` | the one canvas component: hero, cards, thumbnails, preview |
 | `src/Logo.jsx`, `public/favicon.svg` | the mark: a loose leaf held by a strip of tape |

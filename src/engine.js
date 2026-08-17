@@ -3,8 +3,12 @@
 // no React: it is pure canvas drawing, so the view layer never touches it.
 
 import { getArt } from './art.js';
+import { FORMATS, DEFAULT_FORMAT, sizeOfFormat } from './format.js';
 
-const W = 1080, H = 1350;
+// Page size comes from the slide's format; see format.js. Set per slide by
+// renderSlide, the same way PAGE_INK is.
+const sizeOf = (slide) => sizeOfFormat((slide && slide.format) || DEFAULT_FORMAT);
+let W = 1080, H = 1350;
 const INK = '#2f2a26', FAINT = '#8d8175';
 
 const FACE = {
@@ -262,12 +266,14 @@ function frame(ctx, f, img, values, adj) {
   if (style === 'full') {
     if (img) cover(ctx, img, 0, 0, W, H, 'rect', adj);
     else placeholder(ctx, 0, 0, W, H, f.photo_index, 'rect');
-    const band = ctx.createLinearGradient(0, H - 420, 0, H);
+    const bandH = Math.round(H * 0.31);
+    const band = ctx.createLinearGradient(0, H - bandH, 0, H);
     band.addColorStop(0, 'rgba(24,20,16,0)');
     band.addColorStop(1, 'rgba(24,20,16,.72)');
     ctx.fillStyle = band;
-    ctx.fillRect(0, H - 420, W, 420);
-    text(ctx, f.caption && { ...f.caption, ink: '#fdf8ee' }, W / 2, H - 150, values);
+    ctx.fillRect(0, H - bandH, W, bandH);
+    text(ctx, f.caption && { ...f.caption, ink: '#fdf8ee' },
+      W / 2, H - Math.round(bandH * 0.36), values);
     return;
   }
 
@@ -675,12 +681,13 @@ function sticker(ctx, s) {
 
 /* ---------- slide ---------- */
 
-function pageNumber(ctx, n, total) {
+function pageNumber(ctx, n, total, format) {
+  if (format !== 'post') return;   // only the carousel is a numbered sequence
   ctx.save();
   ctx.font = '400 22px "Special Elite", monospace';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillStyle = PAGE_INK === INK ? 'rgba(120,108,96,.75)' : 'rgba(243,236,224,.6)';
-  ctx.fillText(`${n} / ${total}`, W / 2, 1318);
+  ctx.fillText(`${n} / ${total}`, W / 2, H - 32);
   ctx.restore();
 }
 
@@ -695,6 +702,7 @@ function renderSlide(ctx, slide, opts) {
   const total = opts.total || 1;
   const rnd = seeded(index + 1);
 
+  [W, H] = sizeOf(slide);
   PAGE_INK = DARK.has(slide.paper && slide.paper.tint) ? LIGHT_INK : INK;
   ctx.save();
   paper(ctx, slide.paper, rnd);
@@ -712,15 +720,16 @@ function renderSlide(ctx, slide, opts) {
   (slide.ephemera || []).forEach((e) => ephemera(ctx, e, values));
   (slide.stickers || []).forEach((k) => sticker(ctx, k));
   (slide.accents || []).forEach((a) => accent(ctx, a));
-  pageNumber(ctx, index + 1, total);
+  pageNumber(ctx, index + 1, total, slide.format || DEFAULT_FORMAT);
   ctx.restore();
   PAGE_INK = INK;
 }
 
 function paint(canvas, slide, opts, scale) {
   scale = scale || 1;
-  canvas.width = Math.round(W * scale);
-  canvas.height = Math.round(H * scale);
+  const [pw, ph] = sizeOf(slide);
+  canvas.width = Math.round(pw * scale);
+  canvas.height = Math.round(ph * scale);
   const ctx = canvas.getContext('2d');
   ctx.setTransform(scale, 0, 0, scale, 0, 0);
   renderSlide(ctx, slide, opts);
@@ -757,6 +766,6 @@ function fontsReady() {
 }
 
 export {
-  W, H, renderSlide, paint, toBlob, editableSlots, fontsReady, TAPE,
-  previewPhoto, FILTER_NAMES,
+  renderSlide, paint, toBlob, editableSlots, fontsReady, TAPE,
+  previewPhoto, FILTER_NAMES, FORMATS, sizeOf,
 };

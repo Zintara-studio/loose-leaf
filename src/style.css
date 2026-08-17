@@ -278,7 +278,26 @@ button { font: inherit; color: inherit; }
 }
 .card h3 { font-size: 1.12rem; }
 .card .tagline { font-family: var(--hand); font-size: 1.2rem; color: var(--ink-soft); line-height: 1.25; }
-.card .meta { margin-top: -.5rem; font-size: .78rem; color: var(--ink-faint); }
+.card .meta {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  margin-top: -.5rem;
+  font-size: .78rem;
+  color: var(--ink-faint);
+}
+.card .fmt {
+  margin-left: auto;
+  padding: .1rem .4rem;
+  border-radius: 3px;
+  background: var(--paper-deep);
+  font-family: var(--type);
+  font-size: .56rem;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.filters + .filters { margin-top: .5rem; }
 .card-foot { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .15rem; }
 .chip {
   padding: .22rem .6rem;

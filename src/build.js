@@ -28,7 +28,43 @@ function prng(str) {
     return ((h ^ (h >>> 14)) >>> 0) / 4294967296;
   };
 }
+import { FORMATS, REF, scaleY, mapY, sizeOfFormat } from './format.js';
+
 const W = 1080, H = 1350;
+
+// Templates are authored in post space. This walks the finished slides and
+// moves every vertical measure into the target format's band, which beats
+// threading a format through fifty coordinate literals.
+function reformat(slides, format) {
+  if (!format || format === REF) return slides;
+  const k = scaleY(format);
+  const [pw, ph] = sizeOfFormat(format);
+  const my = (y) => Math.round(mapY(format, y));
+  const at = (c) => (c && (c[0] || c[1]) ? [c[0], my(c[1])] : c);  // [0,0] stays
+
+  const frame = (f) => {
+    if (f.style === 'full') {
+      return { ...f, photo_w: pw, photo_h: ph, center: [pw / 2, ph / 2] };
+    }
+    return {
+      ...f,
+      photo_h: Math.round(f.photo_h * k),
+      center: at(f.center),
+    };
+  };
+
+  return slides.map((s) => ({
+    ...s,
+    format,
+    texts: (s.texts || []).map((t) => ({ ...t, center: at(t.center) })),
+    ...(s.frame ? { frame: frame(s.frame) } : {}),
+    ...(s.frames ? { frames: s.frames.map(frame) } : {}),
+    keepsake: s.keepsake ? { ...s.keepsake, center: at(s.keepsake.center) } : s.keepsake,
+    ephemera: (s.ephemera || []).map((e) => ({ ...e, center: at(e.center) })),
+    stickers: (s.stickers || []).map((x) => ({ ...x, center: at(x.center) })),
+    accents: (s.accents || []).map((a) => ({ ...a, center: at(a.center) })),
+  }));
+}
 const num = (r, lo, hi) => lo + r() * (hi - lo);
 const int = (r, lo, hi) => Math.round(num(r, lo, hi));
 const one = (r, list) => list[Math.floor(r() * list.length) % list.length];
@@ -72,6 +108,18 @@ const RHYTHMS = [
   ['bleed', 'polaroid', 'scatter', 'polaroid'],
   ['offset', 'polaroid', 'stack', 'bleed', 'portrait'],
   ['polaroid', 'strip', 'polaroid', 'corner'],
+];
+
+// Stories are short and are watched, not read: fewer frames, more bleed.
+const STORY_RHYTHMS = [
+  ['bleed', 'polaroid', 'bleed'],
+  ['bleed', 'stack', 'bleed'],
+  ['polaroid', 'bleed', 'portrait'],
+  ['bleed', 'bleed', 'polaroid', 'bleed'],
+  ['portrait', 'bleed', 'stack'],
+  ['bleed', 'scatter'],
+  ['bleed', 'offset', 'bleed'],
+  ['corner', 'bleed', 'polaroid'],
 ];
 
 // Accents go in the margins: corner zones for photo pages, a wider set for
@@ -170,6 +218,7 @@ function ephemera(spec, prefix, cx, cy, r) {
 }
 
 export function build(d) {
+  const format = d.format || REF;
   const r = prng(d.id);
   const [coverPaper, pagePaper, closePaper] = d.paper.split('/');
   const stain = (style) => (style === 'grid' || style === 'dot' ? 0 : (r() > 0.45 ? 1 : 0));
@@ -340,7 +389,8 @@ export function build(d) {
     },
   };
 
-  const rhythm = (d.rhythm ? RHYTHMS[d.rhythm] : one(r, RHYTHMS));
+  const pool = (d.format || REF) === 'story' ? STORY_RHYTHMS : RHYTHMS;
+  const rhythm = d.rhythm ? pool[d.rhythm % pool.length] : one(r, pool);
 
   rhythm.forEach((name, k) => {
     const cap = d.caps[k % d.caps.length];
@@ -430,6 +480,7 @@ export function build(d) {
   return {
     template: {
       id: d.id,
+      format,
       name: d.name,
       tagline: d.tag,
       category: d.cat,
@@ -439,6 +490,6 @@ export function build(d) {
       language: d.lang || 'en',
       tone: d.tone || 'refined',
     },
-    slides,
+    slides: reformat(slides, format),
   };
 }

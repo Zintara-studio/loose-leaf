@@ -3,8 +3,18 @@
 // ponytail: one file, no test framework. It exits non-zero and names the slot.
 
 import { TEMPLATES } from './src/templates.js';
+import { FORMATS, REF, scaleY, mapY, sizeOfFormat } from './src/format.js';
 
-const SAFE = { x: [70, 1010], y: [60, 1290] };
+// Ranges are written for the reference format and scaled for the others,
+// so a story is checked against a story-sized safe area, not a post one.
+let FMT = REF, K = 1, SAFE = { x: [70, 1010], y: [60, 1290] };
+const setFormat = (f) => {
+  FMT = f || REF;
+  K = scaleY(FMT);
+  const [, ph] = sizeOfFormat(FMT);
+  SAFE = { x: [70, 1010], y: [Math.round(mapY(FMT, 60)), Math.round(mapY(FMT, 1290))] };
+  SAFE.page = ph;
+};
 const FONT_SIZE = {
   caveat: [30, 220], special_elite: [16, 130], kalam: [24, 80], kalam_bold: [24, 80],
 };
@@ -72,12 +82,19 @@ function checkText(slot, where, ids, { placed = false, ephemeral = false } = {})
 }
 
 function checkFrame(f, where, ids, type) {
-  const R = FRAME_RANGE[type] || FRAME_RANGE.photo;
+  const R0 = FRAME_RANGE[type] || FRAME_RANGE.photo;
+  const scaled = (r) => [Math.floor(r[0] * K) - 1, Math.ceil(r[1] * K) + 1];
+  const R = type === 'full'
+    ? { w: [1080, 1080], h: [SAFE.page, SAFE.page], rot: R0.rot }
+    : { w: R0.w, h: scaled(R0.h), rot: R0.rot };
   if (!inRange(f.photo_w, R.w)) bad(where, `photo_w ${f.photo_w} out of range ${R.w}`);
   if (!inRange(f.photo_h, R.h)) bad(where, `photo_h ${f.photo_h} out of range ${R.h}`);
   if (!inRange(f.rotation, R.rot)) bad(where, `rotation ${f.rotation} out of range`);
-  if (type === 'photo' && (!inRange(f.center[0], [540, 565]) || !inRange(f.center[1], [640, 660]))) {
-    bad(where, `center ${f.center} outside the single-polaroid window`);
+  if (type === 'photo') {
+    const wy = [Math.floor(mapY(FMT, 640)) - 2, Math.ceil(mapY(FMT, 660)) + 2];
+    if (!inRange(f.center[0], [540, 565]) || !inRange(f.center[1], wy)) {
+      bad(where, `center ${f.center} outside the single-polaroid window`);
+    }
   }
   if (f.shape && !SHAPES.includes(f.shape)) bad(where, `bad shape ${f.shape}`);
   if (f.style && !STYLES.includes(f.style)) bad(where, `bad frame style ${f.style}`);
@@ -165,7 +182,8 @@ function checkSlide(slide, i, ids, seen) {
 const ids = new Set();
 TEMPLATES.forEach((t) => {
   const m = t.template;
-  console.log(`\n${m.id}`);
+  setFormat(m.format);
+  console.log(`\n${m.id}  [${m.format || REF}]`);
   ids.clear();
   const seen = new Set();
 
@@ -176,6 +194,12 @@ TEMPLATES.forEach((t) => {
   if (m.category.length < 1 || m.category.length > 3) bad(m.id, 'category needs 1-3 tags');
   if (m.occasions.length < 1 || m.occasions.length > 4) bad(m.id, 'occasions needs 1-4');
   if (!inRange(m.photo_count, [3, 9])) bad(m.id, 'photo_count must be 3-9');
+  if (m.format && !FORMATS[m.format]) bad(m.id, `unknown format ${m.format}`);
+  t.slides.forEach((s, i) => {
+    if ((s.format || REF) !== (m.format || REF)) {
+      bad(m.id, `slide ${i + 1}: format ${s.format} does not match the template`);
+    }
+  });
 
   const budget = Math.min(m.photo_count + 2, 10);
   if (t.slides.length > budget) bad(m.id, `${t.slides.length} slides > budget ${budget}`);
