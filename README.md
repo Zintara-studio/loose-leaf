@@ -20,6 +20,7 @@ npm run build
 | `src/templates.js` | 3 hand-written raw templates + the built 50, in one array |
 | `src/art/` | public-domain sticker artwork, see `art/CREDITS.txt` |
 | `src/Page.jsx` | the one canvas component: hero, cards, thumbnails, preview |
+| `src/Logo.jsx`, `public/favicon.svg` | the mark: a loose leaf held by a strip of tape |
 | `src/Gallery.jsx`, `src/Editor.jsx` | the two views |
 | `validate.js` | `npm run validate` - names the slot and the rule when one is off |
 | `render-check.html` | open it with the dev server up: renders every page full size |

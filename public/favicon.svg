@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Filled ground so the mark holds up against light and dark browser chrome -->
+  <rect width="32" height="32" rx="7" fill="#241f1b"/>
+  <g transform="rotate(-7 16 16)">
+    <rect x="9" y="6.6" width="14" height="19" rx="1.5" fill="#fdf8ee"/>
+    <path d="M12 13.4h8M12 16.8h8M12 20.2h5" stroke="#241f1b" stroke-width="1.3"
+          stroke-linecap="round" opacity=".42"/>
+  </g>
+  <g transform="rotate(-38 10.8 8)">
+    <rect x="5.4" y="5.4" width="10.8" height="5" rx=".5" fill="#f6ccd2"/>
+  </g>
+</svg>

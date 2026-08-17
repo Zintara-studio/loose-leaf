@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Logo from './Logo.jsx';
 import Gallery from './Gallery.jsx';
 import Editor from './Editor.jsx';
 
@@ -8,7 +9,11 @@ export default function App() {
   return (
     <>
       <header className="topbar">
-        <button className="wordmark" onClick={() => setTpl(null)}>loose leaf</button>
+        <button className="wordmark" onClick={() => setTpl(null)}
+          aria-label="Loose Leaf, back to the shelf">
+          <Logo />
+          <span>loose leaf</span>
+        </button>
         <p className="topnote">carousels that look handled</p>
       </header>
 
