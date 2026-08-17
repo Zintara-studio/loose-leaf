@@ -45,6 +45,8 @@ export default function Editor({ tpl, onBack }) {
   const [busy, setBusy] = useState('');
   const [edits, setEdits] = useState({});     // photo_index -> crop / tone
   const [editing, setEditing] = useState(null);
+  // phone shows one panel at a time under a pinned preview; desktop shows both
+  const [tab, setTab] = useState('photos');
 
   const slides = tpl.slides;
   const count = tpl.template.photo_count;
@@ -74,6 +76,20 @@ export default function Editor({ tpl, onBack }) {
 
   // Object URLs outlive React state, so keep a live handle for cleanup and
   // for the bulk-fill loop, which runs faster than re-renders arrive.
+  // the tab bar sticks directly under the pinned preview, whose height
+  // depends on the template's format
+  const stageRef = useRef(null);
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(([entry]) => {
+      el.style.setProperty('--stage-h', `${Math.round(entry.contentRect.height)}px`);
+      el.parentElement.style.setProperty('--stage-h', `${Math.round(entry.contentRect.height)}px`);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [page]);
+
   const live = useRef(photos);
   live.current = photos;
   useEffect(() => () => {
@@ -166,7 +182,20 @@ export default function Editor({ tpl, onBack }) {
 
       <div className="editor-grid">
 
-        <aside className="panel">
+        <nav className="tabs" role="tablist" aria-label="Editor panels">
+          <button type="button" role="tab" aria-selected={tab === 'photos'}
+            className={tab === 'photos' ? 'on' : ''}
+            onClick={() => setTab('photos')}>
+            Photos <span className="tab-n">{Object.keys(photos).length}/{count}</span>
+          </button>
+          <button type="button" role="tab" aria-selected={tab === 'words'}
+            className={tab === 'words' ? 'on' : ''}
+            onClick={() => setTab('words')}>
+            Words <span className="tab-n">{slots.length}</span>
+          </button>
+        </nav>
+
+        <aside className={`panel pane${tab === 'photos' ? ' on' : ''}`}>
           {editing && photos[editing] ? (
             <PhotoEdit
               n={editing}
@@ -227,7 +256,7 @@ export default function Editor({ tpl, onBack }) {
                       onClick={() => swap(n, n - 1)}>&larr;</button>
                     <button type="button"
                       aria-label={`Edit photo ${n}`}
-                      onClick={() => setEditing(n)}>&#9998;</button>
+                      onClick={() => { setEditing(n); setTab('photos'); }}>&#9998;</button>
                     <button type="button"
                       aria-label={`Remove photo ${n}`}
                       onClick={() => clear(n)}>&times;</button>
@@ -243,7 +272,7 @@ export default function Editor({ tpl, onBack }) {
           )}
         </aside>
 
-        <section className="stage">
+        <section className="stage" ref={stageRef}>
           <Page
             id="page"
             slide={slides[page]}
@@ -253,6 +282,7 @@ export default function Editor({ tpl, onBack }) {
             values={values}
             edits={edits}
             scale={0.5}
+            eager
             aria-label={`Page ${page + 1} preview`}
           />
 
@@ -266,7 +296,7 @@ export default function Editor({ tpl, onBack }) {
                   aria-label={`Page ${i + 1}`} aria-current={i === page}
                   onClick={() => setPage(i)}>
                   <Page slide={s} index={i} total={slides.length}
-                    photos={photos} values={values} edits={edits} scale={0.09} />
+                    photos={photos} values={values} edits={edits} scale={0.09} eager />
                 </button>
               ))}
             </div>
@@ -275,13 +305,13 @@ export default function Editor({ tpl, onBack }) {
               onClick={() => setPage((p) => Math.min(slides.length - 1, p + 1))}>&rarr;</button>
           </div>
 
-          <button className="btn btn-ghost" disabled={!!busy}
+          <button className="btn btn-primary save-one" disabled={!!busy}
             onClick={() => download([page])}>
-            Download this page
+            Save page {page + 1}
           </button>
         </section>
 
-        <aside className="panel words">
+        <aside className={`panel words pane${tab === 'words' ? ' on' : ''}`}>
           <h3>Words</h3>
           <p className="hint">This page only. Clear a line to leave it off.</p>
 

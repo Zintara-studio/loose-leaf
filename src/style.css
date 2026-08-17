@@ -31,7 +31,12 @@
 
 * { box-sizing: border-box; }
 
-html { -webkit-text-size-adjust: 100%; }
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scroll-padding-top: 72px;      /* the sticky bar must not eat the anchor */
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
 body {
   margin: 0;
@@ -75,6 +80,7 @@ button { font: inherit; color: inherit; }
   align-items: center;
   justify-content: center;
   gap: .5rem;
+  min-height: 44px;
   padding: .62rem 1.15rem;
   border: 1.5px solid var(--ink);
   border-radius: 100px;
@@ -157,13 +163,12 @@ button { font: inherit; color: inherit; }
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
-  align-items: center;
-  gap: clamp(2rem, 6vw, 5rem);
+  gap: 1.75rem;
   max-width: 1240px;
   margin: 0 auto;
-  padding: clamp(2.5rem, 7vw, 5.5rem) var(--gap) clamp(2rem, 5vw, 4rem);
+  padding: 1.5rem var(--gap) 2rem;
 }
+.hero-stage { order: -1; }        /* show the thing before describing it */
 .hero h1 {
   margin: 1.1rem 0 1.2rem;
   font-size: clamp(2.4rem, 5.4vw, 4rem);
@@ -196,7 +201,7 @@ button { font: inherit; color: inherit; }
 .hero-stage { position: relative; justify-self: center; }
 .hero-stage canvas {
   display: block;
-  width: min(100%, 380px);
+  width: min(100%, 260px);
   height: auto;
   transform: rotate(-2.2deg);
   box-shadow: 0 18px 40px rgba(42, 38, 34, .18);
@@ -229,8 +234,11 @@ button { font: inherit; color: inherit; }
   margin-top: 1.5rem;
 }
 .chip-btn {
-  padding: .4rem .85rem;
-  font-size: .66rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: .5rem .9rem;
+  font-size: .68rem;
   cursor: pointer;
   transition: transform .14s ease, box-shadow .14s ease, background-color .14s ease;
 }
@@ -241,10 +249,11 @@ button { font: inherit; color: inherit; }
   box-shadow: 0 3px 12px rgba(36, 31, 27, .26);
 }
 
+/* two up on a phone: one column turns seventy cards into a mile of scroll */
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: clamp(1.75rem, 4vw, 3rem);
+  grid-template-columns: repeat(2, 1fr);
+  gap: .85rem;
 }
 
 .card {
@@ -252,7 +261,7 @@ button { font: inherit; color: inherit; }
   display: flex;
   flex-direction: column;
   gap: .9rem;
-  padding: 1.1rem 1.1rem 1.3rem;
+  padding: .7rem .7rem .9rem;
   border: 0;
   border-radius: 14px;
   background: var(--paper-card);
@@ -261,9 +270,7 @@ button { font: inherit; color: inherit; }
   cursor: pointer;
   transition: transform .22s cubic-bezier(.2, .7, .3, 1), box-shadow .22s ease;
 }
-.card:nth-child(3n+1) { transform: rotate(-1.4deg); }
-.card:nth-child(3n+2) { transform: rotate(.9deg); }
-.card:nth-child(3n)   { transform: rotate(-.5deg); }
+/* the tilt only reads once cards sit beside each other */
 .card:hover, .card:focus-visible {
   transform: rotate(0) translateY(-6px);
   box-shadow: 0 2px 4px rgba(36, 31, 27, .07), 0 20px 44px rgba(36, 31, 27, .14);
@@ -333,13 +340,51 @@ button { font: inherit; color: inherit; }
 
 .editor-grid {
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr) 310px;
-  gap: var(--gap);
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
   align-items: start;
   max-width: 1420px;
   margin: 0 auto;
-  padding: var(--gap) var(--gap) 5rem;
+  padding: .85rem var(--gap) 4rem;
 }
+
+/* phone: the page stays put at the top while you work on it below */
+.stage {
+  order: -2;
+  position: sticky;
+  top: 106px;
+  z-index: 5;
+  padding-bottom: .5rem;
+  background: var(--paper);                     /* solid, or the panel shows through */
+  box-shadow: 0 10px 12px -10px rgba(36, 31, 27, .28);
+}
+
+.tabs {
+  order: -1;
+  position: sticky;
+  top: calc(106px + var(--stage-h, 340px));     /* measured, so any format fits */
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .35rem;
+  padding: .3rem;
+  border-radius: 12px;
+  background: var(--paper-deep);
+}
+.tabs button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  font-size: .88rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.tabs button.on { background: var(--paper-card); box-shadow: 0 1px 3px rgba(36,31,27,.14); }
+.tab-n { color: var(--ink-faint); font-size: .75rem; }
+
+.pane { display: none; }
+.pane.on { display: block; }
 
 .panel {
   padding: 1.15rem;
@@ -405,7 +450,10 @@ button { font: inherit; color: inherit; }
 /* the slot says where it lands, so the choice is an informed one */
 .slot .where {
   position: absolute;
-  right: 4px; bottom: 4px;
+  right: 4px; top: 4px;
+  max-width: calc(100% - 34px);
+  overflow: hidden;
+  white-space: nowrap;
   z-index: 2;
   padding: .05rem .32rem;
   border-radius: 3px;
@@ -420,27 +468,25 @@ button { font: inherit; color: inherit; }
 
 /* the move / remove row sits outside the label so the file input overlay
    underneath it does not swallow the clicks */
+/* a row along the bottom edge, big enough for a thumb */
 .slot-tools {
   position: absolute;
-  left: 0; right: 0; top: 4px;
+  left: 0; right: 0; bottom: 0;
   z-index: 3;
-  display: flex;
-  justify-content: flex-end;
-  gap: 2px;
-  padding: 0 4px;
-  opacity: 0;
-  transition: opacity .14s ease;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  overflow: hidden;
+  border-radius: 0 0 2px 2px;
+  background: rgba(36, 31, 27, .18);
 }
-.slot-wrap:hover .slot-tools,
-.slot-tools:focus-within { opacity: 1; }
 .slot-tools button {
-  width: 20px; height: 20px;
+  min-height: 34px;
   display: grid; place-items: center;
   border: 0;
-  border-radius: 4px;
-  background: rgba(36, 31, 27, .82);
+  background: rgba(28, 24, 21, .88);
   color: #fff;
-  font-size: .7rem;
+  font-size: .82rem;
   line-height: 1;
   cursor: pointer;
 }
@@ -451,11 +497,12 @@ button { font: inherit; color: inherit; }
   .slot-tools { opacity: 1; }   /* no hover on touch, so always show them */
 }
 
-.stage { display: flex; flex-direction: column; align-items: center; gap: 1.1rem; }
+.stage { display: flex; flex-direction: column; align-items: center; gap: .7rem; }
 .stage canvas#page {
   display: block;
-  width: 100%;
-  max-width: 430px;
+  width: auto;
+  max-width: 100%;
+  max-height: 34vh;
   height: auto;
   border-radius: 2px;
   box-shadow: 0 14px 34px rgba(42, 38, 34, .16);
@@ -463,7 +510,7 @@ button { font: inherit; color: inherit; }
 .pager { display: flex; align-items: center; gap: .55rem; max-width: 100%; }
 .pgbtn {
   flex: none;
-  width: 34px; height: 34px;
+  width: 40px; height: 40px;
   border: 1.5px solid var(--line-2);
   border-radius: 50%;
   background: transparent;
@@ -481,7 +528,8 @@ button { font: inherit; color: inherit; }
   opacity: .6;
   transition: opacity .15s ease;
 }
-.thumb canvas { display: block; width: 44px; height: auto; }
+.thumb canvas { display: block; width: 40px; height: auto; }
+.thumb { min-height: 44px; display: grid; place-items: center; }
 .thumb:hover { opacity: 1; }
 .thumb[aria-current="true"] { opacity: 1; border-color: var(--ink); }
 
@@ -513,69 +561,71 @@ button { font: inherit; color: inherit; }
 .field.locked input { background: var(--paper-deep); }
 .words .empty { font-family: var(--hand); font-size: 1.15rem; color: var(--ink-faint); }
 
-/* ---------- responsive ---------- */
+/* ---------- wider screens ---------- */
+/* Everything above is the phone. These add back what a bigger screen can
+   afford: side-by-side panels, more columns, hover-only affordances. */
 
-@media (max-width: 1120px) {
-  .editor-grid { grid-template-columns: 220px minmax(0, 1fr); }
+@media (min-width: 640px) {
+  .cards { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.75rem; }
+  .card { padding: 1.1rem 1.1rem 1.3rem; }
+  .card:nth-child(3n+1) { transform: rotate(-1.2deg); }
+  .card:nth-child(3n+2) { transform: rotate(.8deg); }
+  .card:nth-child(3n)   { transform: rotate(-.4deg); }
+  .card:hover, .card:focus-visible { transform: rotate(0) translateY(-6px); }
+  .slots { grid-template-columns: repeat(3, 1fr); }   /* wide phone / tablet */
+  .hero-stage canvas { width: min(100%, 320px); }
+}
+
+@media (min-width: 900px) {
+  .hero {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+    align-items: center;
+    gap: clamp(2rem, 6vw, 5rem);
+    padding: clamp(2.5rem, 7vw, 5.5rem) var(--gap) clamp(2rem, 5vw, 4rem);
+  }
+  .hero-stage { order: 0; }
+  .hero-stage canvas { width: min(100%, 380px); }
+
+  .editor-grid {
+    grid-template-columns: 230px minmax(0, 1fr);
+    gap: var(--gap);
+    padding: var(--gap) var(--gap) 5rem;
+  }
+  /* both panels at once, so the tab bar has nothing left to do */
+  .tabs { display: none; }
+  .pane { display: block; }
+  .slots { grid-template-columns: 1fr 1fr; }   /* the rail is narrow again */
+  .stage {
+    order: -1;
+    position: static;
+    background: none;
+    box-shadow: none;
+    gap: 1.1rem;
+  }
+  .tabs { position: static; }
+
+  .stage canvas#page { max-height: none; max-width: 430px; }
   .words { grid-column: 1 / -1; }
   .words #fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 1rem; }
+  .save-one { align-self: center; }
+
+  /* tools appear on hover once there is a pointer to hover with */
+  .slot-tools { opacity: 0; transition: opacity .14s ease; }
+  .slot-wrap:hover .slot-tools,
+  .slot-tools:focus-within { opacity: 1; }
+  .slot-tools button { min-height: 26px; font-size: .72rem; }
+
+  .chip-btn { min-height: 30px; padding: .34rem .8rem; }
+  .pe-btns button { width: 30px; height: 30px; }
+  .pe-filters .chip-btn { min-height: 28px; }
+  .btn { min-height: 0; }
 }
 
-@media (max-width: 900px) {
-  .hero { grid-template-columns: 1fr; padding-top: clamp(1.5rem, 5vw, 3rem); }
-  .hero-stage { order: -1; }
-  .hero-stage canvas { width: min(100%, 300px); margin: 0 auto; }
-  .hero h1 { font-size: clamp(2.1rem, 8vw, 3rem); }
-  .lede { font-size: .98rem; }
-
-  /* the page you are making comes first, then the things that change it */
-  .editor-grid { grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
-  .stage { order: 1; }
-  .editor-grid > .panel:first-child { order: 2; }
-  .words { order: 3; }
-  .slots { grid-template-columns: repeat(4, 1fr); }
-
-  /* keep the download button reachable while scrolling the words */
-  .editor-bar {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    background: var(--paper);
-    backdrop-filter: blur(8px);
-  }
-}
-
-@media (max-width: 620px) {
-  :root { --gap: 1.05rem; }
-  .topbar { padding: .85rem var(--gap); }
-  .wordmark { font-size: 1.7rem; }
-  .topnote { display: none; }
-
-  .cards { grid-template-columns: 1fr; gap: 1.6rem; }
-  .card:nth-child(n) { transform: none; }        /* tilt reads as broken on a narrow column */
-  .card:hover, .card:focus-visible { transform: translateY(-3px); }
-
-  /* filters scroll sideways instead of stacking five rows deep */
-  .filters {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-    margin-inline: calc(var(--gap) * -1);
-    padding-inline: var(--gap);
-    scroll-snap-type: x proximity;
-  }
-  .filters::-webkit-scrollbar { display: none; }
-  .chip-btn { flex: none; scroll-snap-align: start; }
-
-  .editor-bar { padding: .7rem var(--gap); gap: .6rem; }
-  .editor-bar h2 { font-size: 1rem; }
-  .editor-bar .sub { font-size: .6rem; }
-  .editor-bar .btn { padding: .5rem .8rem; font-size: .8rem; }
-
-  .stage canvas#page { max-width: 100%; }
-  .slots { grid-template-columns: repeat(3, 1fr); }
-  .thumb canvas { width: 38px; }
-  .words #fields { grid-template-columns: 1fr; }
+@media (min-width: 1180px) {
+  .editor-grid { grid-template-columns: 250px minmax(0, 1fr) 310px; }
+  .stage { order: 0; }
+  .words { grid-column: auto; }
+  .words #fields { display: block; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -624,11 +674,16 @@ button { font: inherit; color: inherit; }
   text-transform: uppercase;
   color: var(--ink-soft);
 }
-.pe-row input[type="range"] { flex: 1; min-width: 0; accent-color: var(--ink); }
+.pe-row input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  height: 34px;                 /* the grabbable area, not the track */
+  accent-color: var(--ink);
+}
 .pe-val { min-width: 2.6em; text-align: right; color: var(--ink-faint); }
 .pe-btns { display: flex; align-items: center; gap: .3rem; flex: 1; }
 .pe-btns button {
-  width: 26px; height: 26px;
+  width: 40px; height: 40px;
   display: grid; place-items: center;
   border: 1.5px solid var(--line-2);
   border-radius: 6px;
@@ -639,7 +694,73 @@ button { font: inherit; color: inherit; }
 .pe-btns button:hover { border-color: var(--ink); }
 
 .pe-filters { display: flex; flex-wrap: wrap; gap: .3rem; }
-.pe-filters .chip-btn { padding: .3rem .6rem; font-size: .6rem; }
+.pe-filters .chip-btn { min-height: 36px; padding: .4rem .7rem; font-size: .62rem; }
 
 .pe-actions { display: flex; gap: .5rem; }
 .pe-actions .btn { flex: 1; padding: .5rem .7rem; font-size: .82rem; }
+
+/* ---------- phone chrome ---------- */
+
+@media (max-width: 899px) {
+  .topbar { position: sticky; top: 0; z-index: 30; background: var(--paper); }
+  .editor-bar {
+    position: sticky;
+    top: 58px;
+    z-index: 20;
+    gap: .5rem;
+    padding: .5rem var(--gap);
+    background: var(--paper);
+  }
+  .editor-bar .grow { min-width: 0; }
+  .editor-bar h2 {
+    font-size: .95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .editor-bar .sub { display: none; }        /* the size is on the card already */
+  .editor-bar .btn { padding: .5rem .8rem; font-size: .8rem; }
+  .stage { top: 106px; }
+
+  /* filters scroll sideways rather than stacking five rows deep */
+  .filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-inline: calc(var(--gap) * -1);
+    padding-inline: var(--gap);
+    scroll-snap-type: x proximity;
+  }
+  .filters::-webkit-scrollbar { display: none; }
+  .chip-btn { flex: none; scroll-snap-align: start; }
+}
+
+@media (max-width: 620px) {
+  :root { --gap: 1.05rem; }
+  .wordmark { min-height: 44px; font-size: 1.6rem; }
+  .card h3 { font-size: .95rem; }
+  .card .tagline { font-size: 1.02rem; }
+  .card .meta { font-size: .68rem; flex-wrap: wrap; gap: .3rem; }
+  .card .fmt { margin-left: 0; }
+  .card-foot { gap: .25rem; }
+  .chip { font-size: .55rem; padding: .18rem .45rem; }
+  .card .tape { width: 78px; height: 24px; left: 16px; top: -10px; }
+  .wordmark .logo { width: 28px; height: 28px; }
+  .topnote { display: none; }
+  .hero h1 { font-size: clamp(2rem, 8.5vw, 2.8rem); }
+  .lede { font-size: .96rem; }
+  .board { padding-top: 1.5rem; }
+}
+
+/* ---------- phone: save as a floating action ---------- */
+
+@media (max-width: 899px) {
+  .editor-grid { padding-bottom: 5.5rem; }
+  .save-one {
+    position: fixed;
+    right: var(--gap);
+    bottom: 14px;
+    z-index: 40;
+    box-shadow: 0 6px 20px rgba(36, 31, 27, .3);
+  }
+}

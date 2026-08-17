@@ -75,6 +75,7 @@ export default function Gallery({ onPick }) {
             slide={hero.slides[0]}
             total={hero.slides.length}
             scale={0.5}
+            eager
             aria-label={`Cover page of ${hero.template.name}`}
           />
           <p className="hero-caption">page one, before you touch it.</p>

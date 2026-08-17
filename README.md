@@ -67,6 +67,17 @@ onto a specific slot, dragged between slots to move it, nudged with the
 arrow controls, or removed. The bulk "Add photos" button just fills whatever
 gaps are left, in order.
 
+## On a phone
+
+The stylesheet is phone-first: the base rules are the phone layout and
+`min-width` queries add back what a larger screen can afford. In the editor a
+phone gets the page pinned at the top with a Photos / Words tab bar directly
+beneath it, so the preview stays visible while you type, and Save floats
+within thumb reach. Every control is at least 38px tall. The gallery runs two
+cards across, and card canvases paint lazily as they approach the viewport -
+painting seventy-odd covers up front is a real stall on a phone, and they
+reserve their box first so nothing reflows.
+
 ## Editing photos
 
 The edit control on a filled slot opens crop, zoom, 90-degree rotation and
