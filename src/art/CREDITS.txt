@@ -1,0 +1,26 @@
+Artwork in this folder is public domain, retrieved from Wikimedia Commons and
+cropped / white-balanced for use as scrapbook stickers. No rights reserved by
+this project. Nothing here is scraped from Pinterest or any stock site.
+
+BOTANICAL PLATES
+  f-rose.jpg        Choix des plus belles fleurs, P-J Redoute (d. 1840)
+  f-peony.jpg       Choix des plus belles fleurs, P-J Redoute (d. 1840)
+  f-tulip.jpg       Choix des plus belles fleurs, P-J Redoute (d. 1840)
+  f-anemone.jpg     Choix des plus belles fleurs, P-J Redoute (d. 1840)
+  f-poppy.jpg       Papaver somniferum, O W Thome, Flora von Deutschland (1885)
+  f-cornflower.jpg  Centaurea cyanus, O W Thome, Flora von Deutschland (1885)
+  f-clover.jpg      Trifolium pratense, O W Thome, Flora von Deutschland (1885)
+  f-bluebell.jpg    Campanula rotundifolia, O W Thome, Flora von Deutschland
+  f-fern.jpg        Polypodium vulgare, O W Thome, Flora von Deutschland (1885)
+  f-lavender.jpg    Lavandula angustifolia, Koehler's Medizinal-Pflanzen (1887)
+
+PHOTOCHROM AND EARLY COLOUR PRINTS (Library of Congress / Detroit Publishing)
+  m-taj-mahal.jpg   Agra, Taj Mahal, LCCN 2017658158
+  m-colosseum.jpg   The Colosseum and Meta Sudans, Rome, LCCN 2001700939
+  m-venice.jpg      On the Grand Canal, Venice, LCCN 2001700xxx
+  m-bridge.jpg      The Rialto Bridge, Venice, LCCN 2001701xxx
+  m-acropolis.jpg   Athenes, l'Acropole avec Temple de Jupiter Olympien
+  m-eiffel.jpg      Eiffel Tower and fountain, Exposition Universelle, Paris
+
+All of the above are out of copyright by age (author died over 100 years ago,
+or published before 1929 in the United States).
