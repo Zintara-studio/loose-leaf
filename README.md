@@ -44,6 +44,14 @@ versions all looked alike. Templates now vary on six axes:
 - **motifs** - sixteen drawn accents, placed in margin zones that dodge
   whatever else is on the page
 
+## Placing photos
+
+Each slot in the editor says which page it lands on, so the choice is
+informed before you upload. A photo can be dropped straight from the desktop
+onto a specific slot, dragged between slots to move it, nudged with the
+arrow controls, or removed. The bulk "Add photos" button just fills whatever
+gaps are left, in order.
+
 ## Artwork
 
 `src/art/` holds public-domain botanical plates (Redoute, Thome) and

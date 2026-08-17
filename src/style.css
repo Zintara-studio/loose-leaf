@@ -346,7 +346,15 @@ button { font: inherit; color: inherit; }
   outline-offset: 3px;
 }
 
-.slots { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+.slots {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .6rem;
+}
+.slot-wrap { position: relative; }
 .slot {
   display: block;
   aspect-ratio: 1;
@@ -370,8 +378,58 @@ button { font: inherit; color: inherit; }
   left: 5px; top: 4px;
   z-index: 2;
   padding: 0 .3rem;
-  background: rgba(251, 248, 242, .9);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, .92);
   font-size: .66rem;
+  color: var(--ink);
+}
+/* the slot says where it lands, so the choice is an informed one */
+.slot .where {
+  position: absolute;
+  right: 4px; bottom: 4px;
+  z-index: 2;
+  padding: .05rem .32rem;
+  border-radius: 3px;
+  background: rgba(36, 31, 27, .72);
+  color: #fff;
+  font-family: var(--type);
+  font-size: .58rem;
+  letter-spacing: .04em;
+}
+.slot.filled { cursor: grab; }
+.slot.lifting { opacity: .4; }
+
+/* the move / remove row sits outside the label so the file input overlay
+   underneath it does not swallow the clicks */
+.slot-tools {
+  position: absolute;
+  left: 0; right: 0; top: 4px;
+  z-index: 3;
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 0 4px;
+  opacity: 0;
+  transition: opacity .14s ease;
+}
+.slot-wrap:hover .slot-tools,
+.slot-tools:focus-within { opacity: 1; }
+.slot-tools button {
+  width: 20px; height: 20px;
+  display: grid; place-items: center;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(36, 31, 27, .82);
+  color: #fff;
+  font-size: .7rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.slot-tools button:hover { background: var(--ink); }
+.slot-tools button[disabled] { opacity: .3; cursor: default; }
+
+@media (hover: none) {
+  .slot-tools { opacity: 1; }   /* no hover on touch, so always show them */
 }
 
 .stage { display: flex; flex-direction: column; align-items: center; gap: 1.1rem; }

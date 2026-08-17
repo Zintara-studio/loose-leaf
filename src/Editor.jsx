@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Page from './Page.jsx';
 import { editableSlots, toBlob } from './engine.js';
 
@@ -45,6 +45,18 @@ export default function Editor({ tpl, onBack }) {
   const slides = tpl.slides;
   const count = tpl.template.photo_count;
   const slots = editableSlots(slides[page]);
+  const [dragging, setDragging] = useState(null);
+
+  // photo_index -> the page it appears on, so a slot can say where it goes
+  const pageOf = useMemo(() => {
+    const map = {};
+    slides.forEach((s, i) => {
+      (s.frame ? [s.frame] : (s.frames || [])).forEach((f) => {
+        map[f.photo_index] = i + 1;
+      });
+    });
+    return map;
+  }, [slides]);
 
   // Object URLs outlive React state, so keep a live handle for cleanup and
   // for the bulk-fill loop, which runs faster than re-renders arrive.
@@ -70,6 +82,26 @@ export default function Editor({ tpl, onBack }) {
     const prev = live.current[n];
     if (prev) URL.revokeObjectURL(prev.src);
     setPhotos((p) => ({ ...p, [n]: img }));
+  }
+
+  function swap(a, b) {
+    if (!a || !b || a === b) return;
+    setPhotos((p) => {
+      const next = { ...p };
+      if (p[b]) next[a] = p[b]; else delete next[a];
+      if (p[a]) next[b] = p[a]; else delete next[b];
+      return next;
+    });
+  }
+
+  function clear(n) {
+    const img = live.current[n];
+    if (img) URL.revokeObjectURL(img.src);
+    setPhotos((p) => {
+      const next = { ...p };
+      delete next[n];
+      return next;
+    });
   }
 
   async function addMany(files) {
@@ -118,7 +150,10 @@ export default function Editor({ tpl, onBack }) {
 
         <aside className="panel">
           <h3>Photos</h3>
-          <p className="hint">This template takes exactly {count}.</p>
+          <p className="hint">
+            Exactly {count}. Each slot says which page it lands on - drop a file
+            straight onto one, or drag a photo between slots to move it.
+          </p>
 
           <label className="btn btn-ghost btn-block file">
             Add photos
@@ -128,13 +163,46 @@ export default function Editor({ tpl, onBack }) {
 
           <ul className="slots">
             {Array.from({ length: count }, (_, k) => k + 1).map((n) => (
-              <li key={n}>
-                <label className={`slot${photos[n] ? ' filled' : ''}`}>
+              <li key={n} className="slot-wrap">
+                <label
+                  className={`slot${photos[n] ? ' filled' : ''}${dragging === n ? ' lifting' : ''}`}
+                  draggable={!!photos[n]}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('text/plain', String(n));
+                    e.dataTransfer.effectAllowed = 'move';
+                    setDragging(n);
+                  }}
+                  onDragEnd={() => setDragging(null)}
+                  onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragging(null);
+                    // a file dragged in from the desktop goes straight to this slot
+                    if (e.dataTransfer.files?.length) return setPhoto(n, e.dataTransfer.files[0]);
+                    swap(Number(e.dataTransfer.getData('text/plain')), n);
+                  }}
+                >
                   {photos[n] && <img src={photos[n].src} alt="" />}
                   <span className="n">{n}</span>
-                  <input type="file" accept="image/*" aria-label={`Photo ${n}`}
+                  <span className="where">page {pageOf[n] ?? '?'}</span>
+                  <input type="file" accept="image/*"
+                    aria-label={`Photo ${n}, appears on page ${pageOf[n] ?? '?'}`}
                     onChange={(e) => setPhoto(n, e.target.files[0])} />
                 </label>
+
+                {photos[n] && (
+                  <div className="slot-tools">
+                    <button type="button" disabled={n === 1}
+                      aria-label={`Move photo ${n} to slot ${n - 1}`}
+                      onClick={() => swap(n, n - 1)}>&larr;</button>
+                    <button type="button"
+                      aria-label={`Remove photo ${n}`}
+                      onClick={() => clear(n)}>&times;</button>
+                    <button type="button" disabled={n === count}
+                      aria-label={`Move photo ${n} to slot ${n + 1}`}
+                      onClick={() => swap(n, n + 1)}>&rarr;</button>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
