@@ -101,3 +101,7 @@ any stock site - see `src/art/CREDITS.txt`.
 
 Paste a model's JSON into `RAW` in `src/templates.js`, or add a descriptor to
 `src/deck.js`, then run `npm run validate`. It names the slot and the rule.
+
+## Licence
+
+Code is MIT (see `LICENSE`). The artwork in `src/art/` is public domain; sources are listed in `src/art/CREDITS.txt`.
