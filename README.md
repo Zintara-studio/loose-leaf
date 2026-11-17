@@ -1,5 +1,7 @@
 # Loose Leaf
 
+**Try it:** https://zintara-studio.github.io/loose-leaf/ (runs entirely in your browser; nothing uploads).
+
 Scrapbook post maker, React + Vite. Pick one of 71 templates, drop in photos,
 edit the words, download the JPEGs. Nothing uploads anywhere - photos go
 straight into a canvas in the tab and come back out as files.
